@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tic-tac-toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Light theme: soft lavender game table */
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #efeaff;
+    --dot: #d6cdf6;
+    --text: #231d52;
+    --muted: #6a60a3;
+    --plate: #ddd3fb;
+    --tile: #ffffff;
+    --tile-edge: #bfb2ec;
+    --tile-hover: #f8f5ff;
+    --x: #d92b66;
+    --o: #0b8f7c;
+    --btn-edge: #0d0929;
+    color-scheme: light;
+  }
+  /* Dark theme: deep indigo */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17143a;
+      --dot: #262259;
+      --text: #f3f0ff;
+      --muted: #a9a2e0;
+      --plate: #221e54;
+      --tile: #332e75;
+      --tile-edge: #181545;
+      --tile-hover: #3d3889;
+      --x: #ff6b9a;
+      --o: #3ee0c4;
+      --btn-edge: #a59dde;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17143a;
+    --dot: #262259;
+    --text: #f3f0ff;
+    --muted: #a9a2e0;
+    --plate: #221e54;
+    --tile: #332e75;
+    --tile-edge: #181545;
+    --tile-hover: #3d3889;
+    --x: #ff6b9a;
+    --o: #3ee0c4;
+    --btn-edge: #a59dde;
+    color-scheme: dark;
+  }
+
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background-color: var(--bg);
+    background-image: radial-gradient(var(--dot) 1.6px, transparent 1.6px);
+    background-size: 26px 26px;
+    color: var(--text);
+    font-family: "Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif;
+    font-size: 18px;
+    line-height: 1.3;
+    overflow-y: auto;
+  }
+  #root { min-height: 100svh; display: flex; justify-content: center; padding: 22px 16px; }
+  .app { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 16px; }
+
+  .brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 4px; }
+  .brand h1 { margin: 0; font-size: 2.2rem; font-weight: 700; letter-spacing: -.01em; }
+  .brand svg { width: 36px; height: 36px; overflow: visible; }
+
+  /* Segmented choices (friend / computer, difficulty) */
+  .seg {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 6px;
+    background: var(--plate); border-radius: 18px;
+  }
+  .seg button {
+    font: inherit; font-weight: 500; padding: 10px 6px; border: 0; border-radius: 13px;
+    background: transparent; color: var(--muted); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--tile); color: var(--text); font-weight: 600; box-shadow: 0 3px 0 var(--tile-edge);
+  }
+
+  /* Scoreboard */
+  .scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .score {
+    background: var(--plate); border-radius: 16px; padding: 9px 6px 7px; text-align: center;
+    border: 3px solid transparent; transition: border-color .15s;
+  }
+  .score.x.active { border-color: var(--x); }
+  .score.o.active { border-color: var(--o); }
+  .score .who { font-size: .82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .score .n { font-size: 2rem; font-weight: 700; line-height: 1.1; }
+  .score.x .n { color: var(--x); }
+  .score.o .n { color: var(--o); }
+
+  .status { text-align: center; font-size: 1.4rem; font-weight: 500; min-height: 1.8em; margin: 0; }
+  .status .x { color: var(--x); font-weight: 700; }
+  .status .o { color: var(--o); font-weight: 700; }
+
+  /* Board */
+  .plate { padding: clamp(10px, 3.2vw, 16px); background: var(--plate); border-radius: 28px; }
+  .board-wrap { position: relative; width: 100%; aspect-ratio: 1; }
+  .board {
+    position: absolute; inset: 0; display: grid;
+    grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+    gap: 3.3333%;
+  }
+  .cell {
+    position: relative; padding: 0; margin: 0; border: 0; border-radius: 20%;
+    background: var(--tile); color: inherit; cursor: pointer;
+    box-shadow: 0 6px 0 var(--tile-edge);
+    transition: transform .1s ease, box-shadow .1s ease, background .15s ease;
+  }
+  .cell:not(:disabled):hover { background: var(--tile-hover); transform: translateY(-2px); box-shadow: 0 8px 0 var(--tile-edge); }
+  .cell:not(:disabled):active { transform: translateY(4px); box-shadow: 0 2px 0 var(--tile-edge); }
+  .cell:disabled { cursor: default; }
+  .cell.win-x { background: color-mix(in srgb, var(--x) 30%, var(--tile)); animation: pop .5s ease-out; }
+  .cell.win-o { background: color-mix(in srgb, var(--o) 30%, var(--tile)); animation: pop .5s ease-out; }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+  .cell svg { position: absolute; left: 18%; top: 18%; width: 64%; height: 64%; overflow: visible; }
+  .mark { fill: none; stroke-width: 13; stroke-linecap: round; stroke-linejoin: round; }
+  .mark.x { stroke: var(--x); }
+  .mark.o { stroke: var(--o); }
+  .mark path, .mark circle { stroke-dasharray: 1; stroke-dashoffset: 0; animation: draw .3s ease-out both; }
+  .mark path:nth-child(2) { animation-delay: .15s; }
+  @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+  .strike { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .strike line { stroke: var(--text); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 1; animation: draw .4s ease-out .1s both; }
+
+  /* Buttons */
+  .actions { display: flex; gap: 12px; margin-top: 2px; }
+  .btn {
+    flex: 1; font: inherit; font-weight: 600; padding: 12px; border: 0; border-radius: 15px; cursor: pointer;
+    background: var(--tile); color: var(--text); box-shadow: 0 5px 0 var(--tile-edge);
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .btn.primary { background: var(--text); color: var(--bg); box-shadow: 0 5px 0 var(--btn-edge); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--tile-edge); }
+  .btn.primary:active { box-shadow: 0 2px 0 var(--btn-edge); }
+
+  button:focus-visible { outline: 3px solid var(--o); outline-offset: 3px; }
+  @media (max-height: 850px) {
+    #root { padding-block: clamp(8px, 2vh, 16px); }
+    .app { gap: clamp(8px, 1.5vh, 12px); }
+    .plate {
+      width: min(100%, max(260px, calc(100svh - 380px)));
+      align-self: center;
+    }
+    .app:has(.seg + .seg) .plate {
+      width: min(100%, max(240px, calc(100svh - 440px)));
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mark path, .mark circle, .strike line, .cell.win-x, .cell.win-o { animation: none; }
+    .cell, .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script>
+(function () {
+  var h = React.createElement;
+  var useState = React.useState;
+  var useEffect = React.useEffect;
+
+  var LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function getResult(b) {
+    for (var i = 0; i < LINES.length; i++) {
+      var l = LINES[i];
+      if (b[l[0]] && b[l[0]] === b[l[1]] && b[l[0]] === b[l[2]]) {
+        return { winner: b[l[0]], line: l };
+      }
+    }
+    if (b.every(Boolean)) return { winner: null, line: null };
+    return null;
+  }
+
+  // Minimax: O is the computer (maximiser), X is the human.
+  function minimax(b, player, depth) {
+    var r = getResult(b);
+    if (r) {
+      if (r.winner === 'O') return 10 - depth;
+      if (r.winner === 'X') return depth - 10;
+      return 0;
+    }
+    var best = player === 'O' ? -Infinity : Infinity;
+    for (var i = 0; i < 9; i++) {
+      if (b[i]) continue;
+      b[i] = player;
+      var s = minimax(b, player === 'O' ? 'X' : 'O', depth + 1);
+      b[i] = null;
+      best = player === 'O' ? Math.max(best, s) : Math.min(best, s);
+    }
+    return best;
+  }
+
+  function bestMove(board) {
+    var b = board.slice(), bestScore = -Infinity, moves = [];
+    for (var i = 0; i < 9; i++) {
+      if (b[i]) continue;
+      b[i] = 'O';
+      var s = minimax(b, 'X', 1);
+      b[i] = null;
+      if (s > bestScore) { bestScore = s; moves = [i]; }
+      else if (s === bestScore) moves.push(i);
+    }
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+
+  function randomMove(board) {
+    var open = [];
+    for (var i = 0; i < 9; i++) if (!board[i]) open.push(i);
+    return open[Math.floor(Math.random() * open.length)];
+  }
+
+  function Mark(props) {
+    if (props.player === 'X') {
+      return h('svg', { viewBox: '0 0 100 100', 'aria-hidden': true },
+        h('g', { className: 'mark x' },
+          h('path', { d: 'M12 12 L88 88', pathLength: 1 }),
+          h('path', { d: 'M88 12 L12 88', pathLength: 1 })));
+    }
+    return h('svg', { viewBox: '0 0 100 100', 'aria-hidden': true },
+      h('g', { className: 'mark o' },
+        h('circle', { cx: 50, cy: 50, r: 38, pathLength: 1, transform: 'rotate(-110 50 50)' })));
+  }
+
+  // Cell centres in the 300x300 overlay (3 tiles with 10-unit gaps).
+  var CENTERS = [46.667, 150, 253.333];
+
+  function Strike(props) {
+    var l = props.line;
+    var a = l[0], c = l[2];
+    var ax = CENTERS[a % 3], ay = CENTERS[Math.floor(a / 3)];
+    var cx = CENTERS[c % 3], cy = CENTERS[Math.floor(c / 3)];
+    var dx = cx - ax, dy = cy - ay, len = Math.sqrt(dx * dx + dy * dy);
+    var ux = dx / len * 30, uy = dy / len * 30;
+    return h('svg', { className: 'strike', viewBox: '0 0 300 300', 'aria-hidden': true },
+      h('line', { x1: ax - ux, y1: ay - uy, x2: cx + ux, y2: cy + uy, pathLength: 1 }));
+  }
+
+  var MODES = [
+    { id: 'friend', label: 'Play with a friend' },
+    { id: 'cpu', label: 'Play with computer' }
+  ];
+  var LEVELS = [
+    { id: 'easy', label: 'Easy' },
+    { id: 'hard', label: 'Hard (unbeatable)' }
+  ];
+
+  function App() {
+    var _m = useState('friend'), mode = _m[0], setMode = _m[1];
+    var _lv = useState('easy'), level = _lv[0], setLevel = _lv[1];
+    var _b = useState(Array(9).fill(null)), board = _b[0], setBoard = _b[1];
+    var _s = useState('X'), starter = _s[0], setStarter = _s[1];
+    var _sc = useState({ X: 0, O: 0, D: 0 }), scores = _sc[0], setScores = _sc[1];
+    var _c = useState(false), counted = _c[0], setCounted = _c[1];
+
+    var result = getResult(board);
+    var moves = board.filter(Boolean).length;
+    var turn = moves % 2 === 0 ? starter : (starter === 'X' ? 'O' : 'X');
+    var vsCpu = mode === 'cpu';
+    var cpuThinking = vsCpu && !result && turn === 'O';
+
+    // Record the score once per finished round.
+    useEffect(function () {
+      if (result && !counted) {
+        setCounted(true);
+        setScores(function (s) {
+          var key = result.winner || 'D';
+          var n = { X: s.X, O: s.O, D: s.D };
+          n[key] += 1;
+          return n;
+        });
+      }
+    }, [result && result.winner, result && !!result, counted]);
+
+    // Computer plays O.
+    useEffect(function () {
+      if (!cpuThinking) return;
+      var t = setTimeout(function () {
+        var i = level === 'hard' ? bestMove(board) : randomMove(board);
+        setBoard(function (prev) {
+          if (prev[i]) return prev;
+          var next = prev.slice(); next[i] = 'O'; return next;
+        });
+      }, 450);
+      return function () { clearTimeout(t); };
+    }, [cpuThinking, board, level]);
+
+    function play(i) {
+      if (board[i] || result || cpuThinking) return;
+      var next = board.slice();
+      next[i] = turn;
+      setBoard(next);
+    }
+
+    function nextRound() {
+      if (result) setStarter(starter === 'X' ? 'O' : 'X');
+      setBoard(Array(9).fill(null));
+      setCounted(false);
+    }
+
+    function resetAll() {
+      setScores({ X: 0, O: 0, D: 0 });
+      setStarter('X');
+      setBoard(Array(9).fill(null));
+      setCounted(false);
+    }
+
+    function changeMode(id) {
+      if (id === mode) return;
+      setMode(id);
+      resetAll();
+    }
+
+    function changeLevel(id) {
+      if (id === level) return;
+      setLevel(id);
+      resetAll();
+    }
+
+    var xName = vsCpu ? 'You (X)' : 'Player X';
+    var oName = vsCpu ? 'Computer (O)' : 'Player O';
+
+    var status;
+    if (result && result.winner) {
+      var wn = result.winner === 'X' ? (vsCpu ? 'You win' : 'X wins') : (vsCpu ? 'Computer wins' : 'O wins');
+      status = h('span', { className: result.winner.toLowerCase() }, wn + '!');
+    } else if (result) {
+      status = 'Draw. Nobody wins this one.';
+    } else if (cpuThinking) {
+      status = 'Computer is thinking…';
+    } else {
+      status = h('span', null, vsCpu ? 'Your move: ' : 'Turn: ',
+        h('span', { className: turn.toLowerCase() }, turn));
+    }
+
+    var winCells = result && result.line ? result.line : [];
+
+    function seg(items, current, onPick, label) {
+      return h('div', { className: 'seg', role: 'group', 'aria-label': label },
+        items.map(function (m) {
+          return h('button', {
+            key: m.id, type: 'button', 'aria-pressed': current === m.id,
+            onClick: function () { onPick(m.id); }
+          }, m.label);
+        }));
+    }
+
+    return h('div', { className: 'app' },
+      h('div', { className: 'brand' },
+        h('span', { className: 'logo-x' }, h(Mark, { player: 'X' })),
+        h('h1', null, 'Tic-tac-toe'),
+        h('span', { className: 'logo-o' }, h(Mark, { player: 'O' }))),
+
+      seg(MODES, mode, changeMode, 'Game mode'),
+      vsCpu ? seg(LEVELS, level, changeLevel, 'Computer difficulty') : null,
+
+      h('div', { className: 'scores' },
+        h('div', { className: 'score x' + (!result && turn === 'X' ? ' active' : '') },
+          h('div', { className: 'who' }, xName), h('div', { className: 'n' }, scores.X)),
+        h('div', { className: 'score' },
+          h('div', { className: 'who' }, 'Draws'), h('div', { className: 'n' }, scores.D)),
+        h('div', { className: 'score o' + (!result && turn === 'O' ? ' active' : '') },
+          h('div', { className: 'who' }, oName), h('div', { className: 'n' }, scores.O))),
+
+      h('p', { className: 'status', role: 'status', 'aria-live': 'polite' }, status),
+
+      h('div', { className: 'plate' },
+        h('div', { className: 'board-wrap' },
+          h('div', { className: 'board', role: 'grid', 'aria-label': 'Tic-tac-toe board' },
+            board.map(function (v, i) {
+              var label = 'Row ' + (Math.floor(i / 3) + 1) + ', column ' + (i % 3 + 1) + ': ' + (v || 'empty');
+              var win = winCells.indexOf(i) !== -1;
+              return h('button', {
+                key: i, type: 'button', role: 'gridcell', 'aria-label': label,
+                className: 'cell' + (win ? ' win-' + v.toLowerCase() : ''),
+                disabled: !!v || !!result || cpuThinking,
+                onClick: function () { play(i); }
+              }, v ? h(Mark, { player: v }) : null);
+            })),
+          result && result.line ? h(Strike, { line: result.line }) : null)),
+
+      h('div', { className: 'actions' },
+        h('button', { type: 'button', className: 'btn' + (result ? ' primary' : ''), onClick: nextRound },
+          result ? 'Next round' : 'Restart round'),
+        h('button', { type: 'button', className: 'btn', onClick: resetAll }, 'Reset scores')));
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+  /* Light theme: soft lavender game table */
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #efeaff;
+    --dot: #d6cdf6;
+    --text: #231d52;
+    --muted: #6a60a3;
+    --plate: #ddd3fb;
+    --tile: #ffffff;
+    --tile-edge: #bfb2ec;
+    --tile-hover: #f8f5ff;
+    --x: #d92b66;
+    --o: #0b8f7c;
+    --btn-edge: #0d0929;
+    color-scheme: light;
+  }
+  /* Dark theme: deep indigo */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17143a;
+      --dot: #262259;
+      --text: #f3f0ff;
+      --muted: #a9a2e0;
+      --plate: #221e54;
+      --tile: #332e75;
+      --tile-edge: #181545;
+      --tile-hover: #3d3889;
+      --x: #ff6b9a;
+      --o: #3ee0c4;
+      --btn-edge: #a59dde;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17143a;
+    --dot: #262259;
+    --text: #f3f0ff;
+    --muted: #a9a2e0;
+    --plate: #221e54;
+    --tile: #332e75;
+    --tile-edge: #181545;
+    --tile-hover: #3d3889;
+    --x: #ff6b9a;
+    --o: #3ee0c4;
+    --btn-edge: #a59dde;
+    color-scheme: dark;
+  }
+
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background-color: var(--bg);
+    background-image: radial-gradient(var(--dot) 1.6px, transparent 1.6px);
+    background-size: 26px 26px;
+    color: var(--text);
+    font-family: "Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif;
+    font-size: 18px;
+    line-height: 1.3;
+    overflow-y: auto;
+  }
+  #root { min-height: 100svh; display: flex; justify-content: center; padding: 22px 16px; }
+  .app { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 16px; }
+
+  .brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 4px; }
+  .brand h1 { margin: 0; font-size: 2.2rem; font-weight: 700; letter-spacing: -.01em; }
+  .brand svg { width: 36px; height: 36px; overflow: visible; }
+
+  /* Segmented choices (friend / computer, difficulty) */
+  .seg {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 6px;
+    background: var(--plate); border-radius: 18px;
+  }
+  .seg button {
+    font: inherit; font-weight: 500; padding: 10px 6px; border: 0; border-radius: 13px;
+    background: transparent; color: var(--muted); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--tile); color: var(--text); font-weight: 600; box-shadow: 0 3px 0 var(--tile-edge);
+  }
+
+  /* Scoreboard */
+  .scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .score {
+    background: var(--plate); border-radius: 16px; padding: 9px 6px 7px; text-align: center;
+    border: 3px solid transparent; transition: border-color .15s;
+  }
+  .score.x.active { border-color: var(--x); }
+  .score.o.active { border-color: var(--o); }
+  .score .who { font-size: .82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .score .n { font-size: 2rem; font-weight: 700; line-height: 1.1; }
+  .score.x .n { color: var(--x); }
+  .score.o .n { color: var(--o); }
+
+  .status { text-align: center; font-size: 1.4rem; font-weight: 500; min-height: 1.8em; margin: 0; }
+  .status .x { color: var(--x); font-weight: 700; }
+  .status .o { color: var(--o); font-weight: 700; }
+
+  /* Board */
+  .plate { padding: clamp(10px, 3.2vw, 16px); background: var(--plate); border-radius: 28px; }
+  .board-wrap { position: relative; width: 100%; aspect-ratio: 1; }
+  .board {
+    position: absolute; inset: 0; display: grid;
+    grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+    gap: 3.3333%;
+  }
+  .cell {
+    position: relative; padding: 0; margin: 0; border: 0; border-radius: 20%;
+    background: var(--tile); color: inherit; cursor: pointer;
+    box-shadow: 0 6px 0 var(--tile-edge);
+    transition: transform .1s ease, box-shadow .1s ease, background .15s ease;
+  }
+  .cell:not(:disabled):hover { background: var(--tile-hover); transform: translateY(-2px); box-shadow: 0 8px 0 var(--tile-edge); }
+  .cell:not(:disabled):active { transform: translateY(4px); box-shadow: 0 2px 0 var(--tile-edge); }
+  .cell:disabled { cursor: default; }
+  .cell.win-x { background: color-mix(in srgb, var(--x) 30%, var(--tile)); animation: pop .5s ease-out; }
+  .cell.win-o { background: color-mix(in srgb, var(--o) 30%, var(--tile)); animation: pop .5s ease-out; }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+  .cell svg { position: absolute; left: 18%; top: 18%; width: 64%; height: 64%; overflow: visible; }
+  .mark { fill: none; stroke-width: 13; stroke-linecap: round; stroke-linejoin: round; }
+  .mark.x { stroke: var(--x); }
+  .mark.o { stroke: var(--o); }
+  .mark path, .mark circle { stroke-dasharray: 1; stroke-dashoffset: 0; animation: draw .3s ease-out both; }
+  .mark path:nth-child(2) { animation-delay: .15s; }
+  @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+  .strike { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .strike line { stroke: var(--text); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 1; animation: draw .4s ease-out .1s both; }
+
+  /* Buttons */
+  .actions { display: flex; gap: 12px; margin-top: 2px; }
+  .btn {
+    flex: 1; font: inherit; font-weight: 600; padding: 12px; border: 0; border-radius: 15px; cursor: pointer;
+    background: var(--tile); color: var(--text); box-shadow: 0 5px 0 var(--tile-edge);
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .btn.primary { background: var(--text); color: var(--bg); box-shadow: 0 5px 0 var(--btn-edge); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--tile-edge); }
+  .btn.primary:active { box-shadow: 0 2px 0 var(--btn-edge); }
+
+  button:focus-visible { outline: 3px solid var(--o); outline-offset: 3px; }
+  @media (max-height: 850px) {
+    #root { padding-block: clamp(8px, 2vh, 16px); }
+    .app { gap: clamp(8px, 1.5vh, 12px); }
+    .plate {
+      width: min(100%, max(260px, calc(100svh - 380px)));
+      align-self: center;
+    }
+    .app:has(.seg + .seg) .plate {
+      width: min(100%, max(240px, calc(100svh - 440px)));
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mark path, .mark circle, .strike line, .cell.win-x, .cell.win-o { animation: none; }
+    .cell, .btn { transition: none; }
+  }
